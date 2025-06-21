@@ -1,10 +1,17 @@
 package cz.churaq.churaqmenus.Listeners;
 
+import cz.churaq.churaqmenus.Utils.EditSession;
 import cz.churaq.churaqmenus.GUI.GUIManager;
+import cz.churaq.churaqmenus.Main;
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryCloseEvent;
+
+import java.io.File;
 
 public class GUIListener implements Listener {
 
@@ -18,31 +25,55 @@ public class GUIListener implements Listener {
     public void onInventoryClick(InventoryClickEvent e) {
         if (!(e.getWhoClicked() instanceof Player player)) return;
 
-        String title = e.getView().getTitle();
-        var guis = guiManager.getPlugin().getConfig().getConfigurationSection("guis");
-        if (guis == null) return;
+        // Přetypujeme plugin na Main pro přístup k getEditingPlayers
+        Main plugin = (Main) guiManager.getPlugin();
+        EditSession session = plugin.getEditingPlayers().get(player.getUniqueId());
 
-        String guiName = null;
-        for (String key : guis.getKeys(false)) {
-            String configTitle = guis.getString(key + ".title").replace("&", "§");
-            if (title.equals(configTitle)) {
-                guiName = key;
-                break;
+        // Pokud hráč edituje GUI
+        if (session != null) {
+            String title = e.getView().getTitle();
+            // Kontrolujeme, zda název obsahuje "[Editor]"
+            if (title.contains("[Editor]")) {
+                e.setCancelled(false); // Povolíme manipulaci s itemy v editačním módu
+                return;
             }
         }
 
-        if (guiName == null) return;
+        // Normální GUI
+        String guiName = null;
+        FileConfiguration guiConfig = null;
+
+        File menusFolder = new File(guiManager.getPlugin().getDataFolder(), "menus");
+        if (menusFolder.exists()) {
+            for (File file : menusFolder.listFiles((dir, name) -> name.endsWith(".yml"))) {
+                FileConfiguration fileConfig = YamlConfiguration.loadConfiguration(file);
+                String configTitle = fileConfig.getString("title", "").replace("&", "§");
+                if (e.getView().getTitle().equals(configTitle)) {
+                    guiName = file.getName().replace(".yml", "");
+                    guiConfig = fileConfig;
+                    break;
+                }
+            }
+        }
+
+        if (guiName == null || guiConfig == null) return;
 
         e.setCancelled(true);
 
         int slot = e.getSlot();
-        var items = guis.getConfigurationSection(guiName + ".items");
+        var items = guiConfig.getConfigurationSection("items");
         if (items == null) return;
 
         for (String key : items.getKeys(false)) {
-            if (items.getInt(key + ".slot") == slot) {
-                var action = items.getConfigurationSection(key + ".action");
-                if (action == null) return;
+            var item = items.getConfigurationSection(key);
+            if (item == null) {
+                guiManager.getPlugin().getLogger().warning("Neplatná konfigurace pro item " + key + " v GUI " + guiName);
+                continue;
+            }
+
+            if (item.getInt("slot", -1) == slot) {
+                var action = item.getConfigurationSection("action");
+                if (action == null) continue;
 
                 String type = action.getString("type");
                 String value = action.getString("value");
@@ -59,6 +90,18 @@ public class GUIListener implements Listener {
                 }
                 break;
             }
+        }
+    }
+
+    @EventHandler
+    public void onInventoryClose(InventoryCloseEvent e) {
+        if (!(e.getPlayer() instanceof Player player)) return;
+
+        // Přetypujeme plugin na Main
+        Main plugin = (Main) guiManager.getPlugin();
+        EditSession session = plugin.getEditingPlayers().get(player.getUniqueId());
+        if (session != null && e.getView().getTitle().contains("[Editor]")) {
+            guiManager.saveGUIEdit(player, e.getInventory());
         }
     }
 }

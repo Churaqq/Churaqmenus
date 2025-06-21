@@ -1,8 +1,21 @@
-name: ChuraqMenu
+name: ChuraqMenus
 version: 1.0
 main: cz.churaq.churaqmenus.Main
 api-version: 1.13
 commands:
   customgui:
-    description: Open menu
-    usage: /<command> [open|reload] [menu]
+    description: Otevře nebo spravuje vlastní GUI
+    usage: /<command> [open|create|reload|edit] [menu]
+permissions:
+  churaqmenus.open:
+    description: Umožňuje otevřít GUI
+    default: true
+  churaqmenus.create:
+    description: Umožňuje vytvořit nové GUI
+    default: op
+  churaqmenus.reload:
+    description: Umožňuje reloadovat GUI
+    default: op
+  churaqmenus.edit:
+    description: Umožňuje upravit GUI ve hře
+    default: op
