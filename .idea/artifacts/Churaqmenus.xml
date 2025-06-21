@@ -1,0 +1,10 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="Churaqmenus">
+    <output-path>$PROJECT_DIR$/..</output-path>
+    <root id="archive" name="Churaqmenus.jar">
+      <element id="module-output" name="ChuraqMenus" />
+      <element id="file-copy" path="$PROJECT_DIR$/src/config.yml" />
+      <element id="file-copy" path="$PROJECT_DIR$/src/plugin.yml" />
+    </root>
+  </artifact>
+</component>

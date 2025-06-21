@@ -1,0 +1,8 @@
+name: ChuraqMenu
+version: 1.0
+main: cz.churaq.churaqmenus.Main
+api-version: 1.13
+commands:
+  customgui:
+    description: Open menu
+    usage: /<command> [open|reload] [menu]
